@@ -15,5 +15,4 @@ A game called bot-arena. No time to think, just dodge and survive!
 ## Some Extra Info:
 - Some images present in include are for the README.md and not for the game. You should delete those images when building, as they are no longer needed.
 - The Cmake automatically generates the compile_commands.json. So, if you want you can link that with your IDE for good integration.
-- You can also stop the generation of compile_commands.json by removing this line from CMakeLists.txt.
-> `set(CMAKE_EXPORT_COMPILE_COMMANDS ON)`
+- You can also stop the generation of compile_commands.json by removing this line from CMakeLists.txt: `set(CMAKE_EXPORT_COMPILE_COMMANDS ON)`
