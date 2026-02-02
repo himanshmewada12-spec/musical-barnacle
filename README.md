@@ -6,7 +6,7 @@ A game called bot-arena. No time to think, just dodge and survive!
 - Version of SFML used: 3.0.2
 
 ## Formatting for Contribution
-- Use clang-format, style is LLVM.
+- Use clang-format, the formatting is mentioned in the .clang-format file. clang-format will pick it up automatically, you just need to run `$ clang-format -i src/main.cpp`
 
 ## Contribution
 - This repository is always open to any contribution that makes the game better.

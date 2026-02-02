@@ -1,158 +1,212 @@
-/* Copyright Himansh Mewada 2026 */
+/* Copyright (c) 2026 Himansh Mewada */
 
-// load the necessary libraries
 #include <SFML/Graphics.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Window/Mouse.hpp>
 #include <SFML/Window/VideoMode.hpp>
+#include <algorithm>
 
-// The different game states
 using GameState = enum { Play, Menu, Restart };
 
+float getSliderValue(const sf::RectangleShape& sliderKnob, const sf::RectangleShape& sliderRail) {
+  return (sliderKnob.getPosition().x - sliderRail.getPosition().x) /
+         (sliderRail.getSize().x - sliderKnob.getSize().x);
+}
+
 int main() {
-  // Launching a window with the game title
-  const sf::VideoMode WindowSpecification({800, 600});
-  constexpr char WindowTitle[] = "Bot-Arena";
-  sf::RenderWindow Window(WindowSpecification, WindowTitle);
+  const sf::VideoMode windowVideoMode({800, 600});
+  constexpr char windowTitle[] = "Bot-Arena";
+  sf::RenderWindow window(windowVideoMode, windowTitle);
 
-  // The Game Runs at 60 FPS
-  constexpr unsigned FrameRateLimit = 60;
-  Window.setFramerateLimit(FrameRateLimit);
+  constexpr unsigned frameRateLimit = 60;
+  window.setFramerateLimit(frameRateLimit);
 
-  // Set the window icon.
-  sf::Image WindowIcon("include/logo.png");
-  Window.setIcon(WindowIcon);
+  sf::Image windowIcon("include/logo.png");
+  window.setIcon(windowIcon);
 
-  // Text used: /* An Excellent pain in the ass. */
-  const sf::Font Font("include/JetBrainsMono-Bold.ttf");
-  constexpr unsigned LineSeparationDistance = 20u;
-  constexpr char TitleText[] = "Bot-Arena";
-  constexpr unsigned TitleSize = 60u;
-  constexpr sf::Color TitleColor(236, 240, 241, 255);
-  sf::Text Title(Font, TitleText, TitleSize);
-  Title.setFillColor(TitleColor);
-  Title.setPosition({static_cast<float>(Window.getSize().x) / 2 -
-                         Title.getLocalBounds().size.x / 2,
-                     0});
-  constexpr char SubTitleText[] = "No time to think, just dodge and survive!";
-  constexpr unsigned SubTitleSize = TitleSize / 2;
-  constexpr sf::Color SubTitleColor(168, 189, 160, 255);
-  sf::Text SubTitle(Font, SubTitleText, SubTitleSize);
-  SubTitle.setFillColor(SubTitleColor);
-  SubTitle.setPosition({static_cast<float>(Window.getSize().x) / 2 -
-                            SubTitle.getLocalBounds().size.x / 2,
-                        Title.getLocalBounds().size.y + LineSeparationDistance +
-                            Title.getLocalBounds().position.y});
-  constexpr char GeneralInstructionText[] =
+  const sf::Font mainFont("include/JetBrainsMono-Bold.ttf");
+
+  constexpr unsigned lineSpacing = 20u;
+  constexpr char titleText[] = "Bot-Arena";
+  constexpr unsigned titleFontSize = 60u;
+  constexpr sf::Color titleColor(236, 240, 241, 255);
+
+  sf::Text title(mainFont, titleText, titleFontSize);
+  title.setFillColor(titleColor);
+  title.setPosition(
+      {static_cast<float>(window.getSize().x) / 2 - title.getLocalBounds().size.x / 2, 0});
+
+  constexpr char subtitleText[] = "No time to think, just dodge and survive!";
+  constexpr unsigned subtitleFontSize = titleFontSize / 2;
+  constexpr sf::Color subtitleColor(168, 189, 160, 255);
+
+  sf::Text subtitle(mainFont, subtitleText, subtitleFontSize);
+  subtitle.setFillColor(subtitleColor);
+  subtitle.setPosition(
+      {static_cast<float>(window.getSize().x) / 2 - subtitle.getLocalBounds().size.x / 2,
+       title.getLocalBounds().size.y + lineSpacing + title.getLocalBounds().position.y});
+
+  constexpr char instructionText[] =
       "--> Use W A S D to move. You can also use the arrow keys to move.\n"
       "--> There is only one objective, don't get caught.\n"
       "--> Can you survive this utlimate game of tag.";
-  constexpr unsigned GeneralInstructionSize = SubTitleSize / 2;
-  constexpr sf::Color GeneralInstructionColor(210, 123, 114, 255);
-  sf::Text GeneralInstruction(Font, GeneralInstructionText,
-                              GeneralInstructionSize);
-  GeneralInstruction.setFillColor(GeneralInstructionColor);
-  GeneralInstruction.setPosition(
-      {static_cast<float>(Window.getSize().x) / 2 -
-           GeneralInstruction.getLocalBounds().size.x / 2,
-       static_cast<float>(Window.getSize().y) / 2});
+  constexpr unsigned instructionFontSize = subtitleFontSize / 2;
+  constexpr sf::Color instructionColor(210, 123, 114, 255);
 
-  // Background Color
-  constexpr sf::Color BackgroundColor(43, 52, 59, 255);
+  sf::Text instructions(mainFont, instructionText, instructionFontSize);
+  instructions.setFillColor(instructionColor);
+  instructions.setPosition(
+      {static_cast<float>(window.getSize().x) / 2 - instructions.getLocalBounds().size.x / 2,
+       static_cast<float>(window.getSize().y) / 2});
 
-  // Current game state
-  GameState CurrentGameState = Menu;
+  constexpr sf::Color backgroundColor(43, 52, 59, 255);
 
-  // Slider related colors
-  sf::Color SliderRailColor(65, 76, 85, 255);
-  sf::Color SliderKnobColor(218, 191, 159, 255);
-  sf::Color EndLabelColor(144, 155, 160, 255);
-  sf::Color SliderHeadingColor(133, 163, 178, 255);
+  GameState currentGameState = Menu;
 
-  // Actual Sliders
-  constexpr unsigned SliderAreaHeight = 450;
-  sf::RectangleShape SliderRail1({300, 6});
-  sf::RectangleShape SliderRail2({300, 6});
-  sf::RectangleShape SliderKnob1({12, 24});
-  sf::RectangleShape SliderKnob2({12, 24});
-  sf::Text SliderRail1Text1(Font, "High", GeneralInstructionSize / 2.f + 2.5);
-  sf::Text SliderRail1Text2(Font, "Low", GeneralInstructionSize / 2.f + 2.5);
-  sf::Text SliderRail2Text1(Font, "High", GeneralInstructionSize / 2.f + 2.5);
-  sf::Text SliderRail2Text2(Font, "Low", GeneralInstructionSize / 2.f + 2.5);
-  SliderRail1Text1.setFillColor(EndLabelColor);
-  SliderRail1Text2.setFillColor(EndLabelColor);
-  SliderRail2Text1.setFillColor(EndLabelColor);
-  SliderRail2Text2.setFillColor(EndLabelColor);
-  SliderRail1.setFillColor(SliderRailColor);
-  SliderRail2.setFillColor(SliderRailColor);
-  SliderKnob1.setFillColor(SliderKnobColor);
-  SliderKnob2.setFillColor(SliderKnobColor);
-  SliderRail1.setPosition(
-      {static_cast<float>(Window.getSize().x) / 2 - SliderRail1.getSize().x / 2,
-       SliderAreaHeight + 0});
-  SliderRail2.setPosition(
-      {static_cast<float>(Window.getSize().x) / 2 - SliderRail1.getSize().x / 2,
-       SliderAreaHeight + 90});
-  SliderKnob1.setPosition(
-      {SliderRail1.getPosition().x + SliderKnob1.getSize().x / 2,
-       SliderRail1.getPosition().y - SliderKnob1.getSize().y / 2});
-  SliderKnob2.setPosition(
-      {SliderRail2.getPosition().x + SliderKnob2.getSize().x / 2,
-       SliderRail2.getPosition().y - SliderKnob2.getSize().y / 2});
-  constexpr unsigned SeparationDistance = 10;
-  SliderRail1Text1.setPosition({SliderRail1.getPosition().x -
-                                    SliderRail1Text1.getLocalBounds().size.x -
-                                    SeparationDistance,
-                                SliderRail1.getPosition().y});
-  SliderRail1Text2.setPosition({SliderRail1.getPosition().x +
-                                    SliderRail1.getLocalBounds().size.x +
-                                    SeparationDistance,
-                                SliderRail1.getPosition().y});
-  SliderRail2Text1.setPosition({SliderRail2.getPosition().x -
-                                    SliderRail2Text1.getLocalBounds().size.x -
-                                    SeparationDistance,
-                                SliderRail2.getPosition().y});
-  SliderRail2Text2.setPosition({SliderRail2.getPosition().x +
-                                    SliderRail2.getLocalBounds().size.x +
-                                    SeparationDistance,
-                                SliderRail2.getPosition().y});
+  const sf::Color sliderRailColor(65, 76, 85, 255);
+  const sf::Color sliderKnobColor(218, 191, 159, 255);
+  const sf::Color sliderLabelColor(144, 155, 160, 255);
+  const sf::Color sliderHeadingColor(133, 163, 178, 255);
 
-  // The main game loop
-  while (Window.isOpen()) {
-    while (std::optional Event = Window.pollEvent()) {
-      if (Event->is<sf::Event::Closed>()) {
-        Window.close();
+  constexpr unsigned sliderAreaY = 450;
+  constexpr unsigned labelSpacing = 10;
+
+  sf::RectangleShape arenaSizeRail({300, 6});
+  sf::RectangleShape botCountRail({300, 6});
+  sf::RectangleShape arenaSizeKnob({12, 24});
+  sf::RectangleShape botCountKnob({12, 24});
+
+  arenaSizeRail.setFillColor(sliderRailColor);
+  botCountRail.setFillColor(sliderRailColor);
+  arenaSizeKnob.setFillColor(sliderKnobColor);
+  botCountKnob.setFillColor(sliderKnobColor);
+
+  arenaSizeRail.setPosition(
+      {static_cast<float>(window.getSize().x) / 2 - arenaSizeRail.getSize().x / 2, sliderAreaY});
+  botCountRail.setPosition(
+      {static_cast<float>(window.getSize().x) / 2 - arenaSizeRail.getSize().x / 2,
+       sliderAreaY + 90});
+
+  arenaSizeKnob.setPosition({arenaSizeRail.getPosition().x + arenaSizeKnob.getSize().x / 2,
+                             arenaSizeRail.getPosition().y - arenaSizeKnob.getSize().y / 2 + 2});
+  botCountKnob.setPosition({botCountRail.getPosition().x + botCountKnob.getSize().x / 2,
+                            botCountRail.getPosition().y - botCountKnob.getSize().y / 2 + 2});
+
+  sf::Text arenaLowLabel(mainFont, "Low", instructionFontSize / 2.f + 2.5);
+  sf::Text arenaHighLabel(mainFont, "High", instructionFontSize / 2.f + 2.5);
+  sf::Text botLowLabel(mainFont, "Low", instructionFontSize / 2.f + 2.5);
+  sf::Text botHighLabel(mainFont, "High", instructionFontSize / 2.f + 2.5);
+
+  arenaLowLabel.setFillColor(sliderLabelColor);
+  arenaHighLabel.setFillColor(sliderLabelColor);
+  botLowLabel.setFillColor(sliderLabelColor);
+  botHighLabel.setFillColor(sliderLabelColor);
+
+  arenaLowLabel.setPosition(
+      {arenaSizeRail.getPosition().x - arenaLowLabel.getLocalBounds().size.x - labelSpacing,
+       arenaSizeRail.getPosition().y});
+  arenaHighLabel.setPosition(
+      {arenaSizeRail.getPosition().x + arenaSizeRail.getLocalBounds().size.x + labelSpacing,
+       arenaSizeRail.getPosition().y});
+  botLowLabel.setPosition(
+      {botCountRail.getPosition().x - botLowLabel.getLocalBounds().size.x - labelSpacing,
+       botCountRail.getPosition().y});
+  botHighLabel.setPosition(
+      {botCountRail.getPosition().x + botCountRail.getLocalBounds().size.x + labelSpacing,
+       botCountRail.getPosition().y});
+
+  constexpr unsigned sliderHeadingFontSize = instructionFontSize / 2 + 5;
+
+  sf::Text arenaHeading(mainFont, "Arena Size", sliderHeadingFontSize);
+  sf::Text botHeading(mainFont, "Number of Bots", sliderHeadingFontSize);
+
+  arenaHeading.setFillColor(sliderHeadingColor);
+  botHeading.setFillColor(sliderHeadingColor);
+
+  arenaHeading.setPosition(
+      {arenaLowLabel.getPosition().x,
+       arenaSizeKnob.getPosition().y - arenaHeading.getLocalBounds().size.y - 10});
+  botHeading.setPosition({botLowLabel.getPosition().x,
+                          botCountKnob.getPosition().y - botHeading.getLocalBounds().size.y - 10});
+
+  bool isArenaDragging = false;
+  bool isBotDragging = false;
+
+  unsigned short arenaSize =
+      static_cast<unsigned short>(getSliderValue(arenaSizeKnob, arenaSizeRail) * 500);
+  unsigned short botCount =
+      static_cast<unsigned short>(getSliderValue(botCountKnob, botCountRail) * 50);
+
+  while (window.isOpen()) {
+    while (const std::optional event = window.pollEvent()) {
+      if (event->is<sf::Event::Closed>()) {
+        window.close();
       }
     }
 
-    // Set background
-    Window.clear(BackgroundColor);
+    window.clear(backgroundColor);
 
-    // Input buffer
-    switch (CurrentGameState) {
-    case Play:
-      break;
-    case Restart:
-      break;
-    case Menu:
-      Window.draw(Title);
-      Window.draw(SubTitle);
-      Window.draw(GeneralInstruction);
-      Window.draw(SliderRail1);
-      Window.draw(SliderRail2);
-      Window.draw(SliderKnob1);
-      Window.draw(SliderKnob2);
-      Window.draw(SliderRail1Text1);
-      Window.draw(SliderRail1Text2);
-      Window.draw(SliderRail2Text1);
-      Window.draw(SliderRail2Text2);
-      break;
+    switch (currentGameState) {
+      case Play:
+        break;
+      case Restart:
+        break;
+      case Menu:
+        window.draw(title);
+        window.draw(subtitle);
+        window.draw(instructions);
+
+        window.draw(arenaSizeRail);
+        window.draw(botCountRail);
+        window.draw(arenaLowLabel);
+        window.draw(arenaHighLabel);
+        window.draw(botLowLabel);
+        window.draw(botHighLabel);
+        window.draw(arenaHeading);
+        window.draw(botHeading);
+
+        sf::Vector2f mousePosition = window.mapPixelToCoords(sf::Mouse::getPosition(window));
+
+        if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)) {
+          if (!isArenaDragging && !isBotDragging) {
+            if (arenaSizeKnob.getGlobalBounds().contains(mousePosition)) {
+              isArenaDragging = true;
+            } else if (botCountKnob.getGlobalBounds().contains(mousePosition)) {
+              isBotDragging = true;
+            }
+          }
+        } else {
+          isArenaDragging = false;
+          isBotDragging = false;
+        }
+
+        if (isArenaDragging) {
+          sf::FloatRect railBounds = arenaSizeRail.getGlobalBounds();
+          float minX = railBounds.position.x;
+          float maxX = railBounds.position.x + railBounds.size.x - arenaSizeKnob.getSize().x;
+          float newX = mousePosition.x - arenaSizeKnob.getSize().x / 2.f;
+          arenaSizeKnob.setPosition({std::clamp(newX, minX, maxX), arenaSizeKnob.getPosition().y});
+        }
+
+        if (isBotDragging) {
+          sf::FloatRect railBounds = botCountRail.getGlobalBounds();
+          float minX = railBounds.position.x;
+          float maxX = railBounds.position.x + railBounds.size.x - botCountKnob.getSize().x;
+          float newX = mousePosition.x - botCountKnob.getSize().x / 2.f;
+          botCountKnob.setPosition({std::clamp(newX, minX, maxX), botCountKnob.getPosition().y});
+        }
+
+        window.draw(arenaSizeKnob);
+        window.draw(botCountKnob);
+
+        arenaSize = static_cast<unsigned short>(getSliderValue(arenaSizeKnob, arenaSizeRail) * 500);
+        botCount = static_cast<unsigned short>(getSliderValue(botCountKnob, botCountRail) * 50);
+        break;
     }
 
-    // Display input buffer onto the screen
-    Window.display();
+    window.display();
   }
 
-  // Exit
   return 0;
 }
